@@ -24,7 +24,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  ExternalLink,
   GitBranch,
   Calendar,
   AlertCircle,
@@ -52,7 +51,7 @@ export default function DashboardPage() {
       try {
         setIsLoadingProjects(true);
         const res = await fetch(
-          `http://127.0.0.1:4500/api/project?userId=${user.id}`
+          `${process.env.NEXT_PUBLIC_SERVER_URL}/api/project?userId=${user.id}`
         );
         const data = await res.json();
         const sortedProjects = (data?.data || []).sort(
