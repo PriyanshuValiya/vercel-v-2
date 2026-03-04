@@ -217,7 +217,7 @@ function DeployPage() {
 
       // Make API call to deploy
       const deployResponse = await fetch(
-        `http://127.0.0.1:4500/api/project`,
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/api/project`,
         {
           method: "POST",
           headers: {
