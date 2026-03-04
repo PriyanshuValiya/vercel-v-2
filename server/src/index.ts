@@ -9,7 +9,24 @@ import { proxyController } from "./controllers/proxyController";
 const app = express();
 const PORT = 4500;
 
-app.use(cors());
+const allowedOrigins = [
+  "https://vercel.priyanshuvaliya.dev",
+  "http://localhost:3000",
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      callback(new Error(`CORS blocked: ${origin}`));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
 app.use(express.json());
 
 app.use("/api", projectRoutes);
