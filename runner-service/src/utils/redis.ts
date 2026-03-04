@@ -9,9 +9,7 @@ if (!process.env.REDIS_URL) {
   );
 }
 
-const redis = new Redis(process.env.REDIS_URL!, {
-  tls: {},
-});
+const redis = new Redis(process.env.REDIS_URL!, { tls: {} });
 
 redis.on("connect", () => console.log("$ Connected to Upstash Redis"));
 redis.on("error", (err) => console.error("# Redis error", err));

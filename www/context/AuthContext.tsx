@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           .from("users")
           .select("*")
           .eq("email", email)
-          .single();
+          .maybeSingle();
 
         if (fetchError) {
           throw fetchError;
@@ -55,15 +55,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           if (updateError) throw updateError;
         } else {
-          const { error: insertError } = await supabase.from("users").insert({
-            id,
-            name,
-            email,
-            profile_photo,
-            github_token,
-          });
+          const { error: insertError } = await supabase
+            .from("users")
+            .insert({ id, name, email, profile_photo, github_token });
 
-          if (insertError) throw insertError;
+          if (insertError) {
+            console.error(
+              "Error inserting new user into database:",
+              insertError,
+            );
+            throw insertError;
+          }
         }
 
         setUser(mapUser(user));
@@ -80,7 +82,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       (_event: any, session: any) => {
         setUser(mapUser(session?.user));
         setLoading(false);
-      }
+      },
     );
 
     return () => {

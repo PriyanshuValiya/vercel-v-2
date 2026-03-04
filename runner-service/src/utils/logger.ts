@@ -8,9 +8,7 @@ export async function updateLogs(projectId: string, line: string) {
       .eq("id", projectId)
       .single();
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
     const updatedLogs = (data.logs || "") + "\n" + line;
 
@@ -19,9 +17,7 @@ export async function updateLogs(projectId: string, line: string) {
       .update({ logs: updatedLogs })
       .eq("id", projectId);
 
-    if (updateError) {
-      throw updateError;
-    }
+    if (updateError) throw updateError;
   } catch (err) {
     console.error("# Failed to update logs in Supabase:", err);
   }

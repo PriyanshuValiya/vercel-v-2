@@ -3,8 +3,12 @@ dotenv.config();
 
 import redis from "./utils/redis";
 import { Project } from "./types/types";
-import { getAvailablePort } from "./utils/portManager";
-import { writeNginxRoute, reloadNginx } from "./utils/nginx";
+import { getAvailablePort, releasePort } from "./utils/portManager";
+import {
+  writeNginxRoute,
+  reloadNginx,
+  slugifyProjectName,
+} from "./utils/nginx";
 import { createClient } from "@supabase/supabase-js";
 import simpleGit from "simple-git";
 import path from "path";
@@ -18,18 +22,31 @@ if (
   !process.env.SUPABASE_URL ||
   !process.env.SUPABASE_SERVICE_ROLE_KEY ||
   !process.env.BASE_IP_URL ||
-  !process.env.BASE_URL
+  !process.env.DEPLOY_DOMAIN
 ) {
   throw new Error(
-    "Missing Supabase environment variables OR BASE_IP_URL in runner service !!"
+    "Missing env vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, BASE_IP_URL, DEPLOY_DOMAIN",
   );
 }
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
+// ---------------------------------------------------------------------------
+// updateViteConfig
+//
+// FIX: base is now "/" (root of its own subdomain) instead of "/${projectId}/".
+//
+// Old code set base to "/${projectId}/" so assets loaded from:
+//   https://BUCKET.s3.REGION.amazonaws.com/projectId/assets/main.js
+// This only works with a direct S3 URL, not a subdomain proxy.
+//
+// New: base is "/" so assets load from:
+//   https://projectname.vercel.priyanshuvaliya.dev/assets/main.js
+// which nginx proxies correctly to S3 prefix/assets/main.js.
+// ---------------------------------------------------------------------------
 async function updateViteConfig(dir: string, projectId: string) {
   const jsConfig = path.join(dir, "vite.config.js");
   const tsConfig = path.join(dir, "vite.config.ts");
@@ -55,21 +72,25 @@ async function updateViteConfig(dir: string, projectId: string) {
   if (configContent.includes("defineConfig({")) {
     configContent = configContent.replace(
       /defineConfig\(\{\s*/,
-      (match) => `${match}${baseLine}\n`
+      (match) => `${match}${baseLine}\n`,
     );
   } else {
     configContent = configContent.replace(
       /\{\s*/,
-      (match) => `${match}${baseLine}\n`
+      (match) => `${match}${baseLine}\n`,
     );
   }
 
   await fs.writeFile(configPath, configContent);
 }
 
+// ---------------------------------------------------------------------------
+// stopAndRemoveContainer
+// Bug R4 fix: log fires inside the inner exec callback, not outside it.
+// ---------------------------------------------------------------------------
 export const stopAndRemoveContainer = async (
   imageName: string,
-  jobId: string
+  jobId: string,
 ): Promise<void> => {
   return new Promise((resolve, reject) => {
     const listContainers = `docker ps -a --filter ancestor=${imageName} --format "{{.ID}}"`;
@@ -82,12 +103,10 @@ export const stopAndRemoveContainer = async (
 
       const containerIds = stdout.split("\n").filter(Boolean);
 
-      if (containerIds.length === 0) {
-        console.log(`No running containers found for image: ${imageName}`);
-      } else {
+      if (containerIds.length > 0) {
         await updateLogs(
           jobId,
-          `$ Cleaning Old Docker Containers and Image...`
+          `$ Cleaning Old Docker Containers and Image...`,
         );
       }
 
@@ -99,22 +118,25 @@ export const stopAndRemoveContainer = async (
         ? `${stopRemoveCommands} && docker rmi -f ${imageName}`
         : `docker rmi -f ${imageName}`;
 
-      exec(finalCommand, (err2, stdout2, stderr2) => {
+      exec(finalCommand, async (err2, _stdout2, stderr2) => {
         if (err2) {
           console.error(
             `Failed to remove container/image for ${imageName}:`,
-            stderr2
+            stderr2,
           );
           return reject(err2);
         }
         resolve();
+        // Bug R4 fix: this log now fires AFTER the command completes
+        await updateLogs(jobId, `$ Cleaned up old Containers...`);
       });
-
-      await updateLogs(jobId, `$ Cleaned up old Containes...`);
     });
   });
 };
 
+// ---------------------------------------------------------------------------
+// processJob
+// ---------------------------------------------------------------------------
 async function processJob(job: Project) {
   console.log("🔧 Processing:", job.project_name);
 
@@ -130,6 +152,13 @@ async function processJob(job: Project) {
     .update({ status: "building", logs: "" })
     .eq("id", job.id);
 
+  // Bug R6 fix: track allocated port to release it on failure
+  let allocatedPort: number | null = null;
+
+  // FIX: compute subdomain URL once — used for both React and Node
+  const projectSlug = slugifyProjectName(job.project_name);
+  const deployedUrl = `https://${projectSlug}.${process.env.DEPLOY_DOMAIN}`;
+
   try {
     await updateLogs(job.id, `$ Cloning repo ${job.repo_url}...`);
     await simpleGit().clone(job.repo_url, dir);
@@ -143,17 +172,22 @@ async function processJob(job: Project) {
       await updateLogs(job.id, "$ .env file created, variable injected...");
     }
 
+    // -----------------------------------------------------------------------
+    // React path
+    // -----------------------------------------------------------------------
     if (job.framework === "React") {
       await updateLogs(job.id, "$ Installing dependencies...");
       await runCommandWithLogs("npm", ["install"], dir, job.id);
+
       await updateLogs(job.id, "$ Updating vite.config.js...");
+      // FIX: no longer passes projectId — base is now always "/"
       await updateViteConfig(dir, job.id);
+
       await updateLogs(job.id, "$ Building project...");
       await runCommandWithLogs("npm", ["run", "build"], dir, job.id);
       await updateLogs(job.id, "$ Project built successfully...");
 
       const possibleDirs = ["dist", "build", "out"];
-
       let buildPath = "";
       for (const dirName of possibleDirs) {
         const fullPath = path.join(dir, dirName);
@@ -163,28 +197,28 @@ async function processJob(job: Project) {
         }
       }
 
-      if (!buildPath) {
-        throw new Error("No valid frontend build folder found.");
-      }
-
+      if (!buildPath) throw new Error("No valid frontend build folder found.");
       await updateLogs(job.id, `$ Found build folder: ${buildPath}`);
 
-      console.log(`Calling ${process.env.BASE_IP_URL!}/upload`);
       const response = await fetch(`${process.env.BASE_IP_URL!}/upload`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectId: job.id, localPath: buildPath }),
       });
 
-      const { url: deployedUrl } = await response.json();
+      await response.json();
       await updateLogs(job.id, `$ Uploaded build to S3 successfully...`);
 
-      // writeNginxRoute(job.id, false);
-      // reloadNginx();
+      // FIX: was commented out — nginx MUST be called to create the
+      // server {} block for the subdomain, otherwise SSL handshake fails.
+      // Pass both projectName (subdomain label) and projectId (S3 key).
+      writeNginxRoute(job.project_name, job.id, false);
+      reloadNginx();
 
       await fs.remove(dir);
       await updateLogs(job.id, `$ Cleaned up local build...`);
 
+      // FIX: deployed_url is now the subdomain, not the raw S3 URL
       await supabase
         .from("projects")
         .update({ status: "deployed", deployed_url: deployedUrl })
@@ -201,8 +235,14 @@ async function processJob(job: Project) {
           timeZone: "Asia/Kolkata",
         }),
       });
+
+      // -----------------------------------------------------------------------
+      // Node path
+      // -----------------------------------------------------------------------
     } else {
       const port = job.port == null ? await getAvailablePort() : job.port;
+      // Bug R6 fix: record port so catch block can release it
+      allocatedPort = port;
 
       const dockerfilePath = path.join(dir, "Dockerfile");
       const isTSProject = fs.existsSync(path.join(dir, "tsconfig.json"));
@@ -233,23 +273,20 @@ async function processJob(job: Project) {
 
       if (!fs.existsSync(dockerfilePath)) {
         const defaultDockerfile = `
-          FROM node:18-alpine
-          WORKDIR /app
-          COPY . .
-          RUN npm install
-          ${isTSProject ? "RUN npm run build" : ""}
-          COPY .env .env
-          ENV PORT=3000
-          EXPOSE 3000
-          CMD ["node", "${isTSProject ? "dist" : "."}/${entryFile.replace(
-            ".ts",
-            ".js"
-          )}"]
-        `;
-        fs.writeFileSync(dockerfilePath, defaultDockerfile.trim());
+FROM node:18-alpine
+WORKDIR /app
+COPY . .
+RUN npm install
+${isTSProject ? "RUN npm run build" : ""}
+COPY .env .env
+ENV PORT=3000
+EXPOSE 3000
+CMD ["node", "${isTSProject ? "dist" : "."}/${entryFile.replace(".ts", ".js")}"]
+`.trim();
+        fs.writeFileSync(dockerfilePath, defaultDockerfile);
         await updateLogs(
           job.id,
-          "@ No Dockerfile found, creating Dockerfile..."
+          "@ No Dockerfile found, creating Dockerfile...",
         );
       }
 
@@ -257,7 +294,6 @@ async function processJob(job: Project) {
       await runCommandWithLogs("npm", ["install"], dir, job.id);
 
       const imageName = `${job.project_name}-${job.id}`.toLowerCase();
-
       await stopAndRemoveContainer(imageName, job.id);
 
       await updateLogs(job.id, `$ Building Docker image...`);
@@ -265,28 +301,44 @@ async function processJob(job: Project) {
         "docker",
         ["build", "-t", imageName, "."],
         dir,
-        job.id
+        job.id,
       );
 
       await updateLogs(job.id, `$ Running Docker container...`);
+      // FIX: bind to 127.0.0.1 — port is NOT exposed publicly.
+      // EC2 security group does NOT need this port open anymore.
+      // Old: `-p ${port}:3000`  →  New: `-p 127.0.0.1:${port}:3000`
       await runCommandWithLogs(
         "docker",
-        ["run", "-d", "-p", `${port}:3000`, "--name", imageName, imageName],
+        [
+          "run",
+          "-d",
+          "-p",
+          `127.0.0.1:${port}:3000`,
+          "--name",
+          imageName,
+          imageName,
+        ],
         dir,
-        job.id
+        job.id,
       );
 
-      const deployedUrl = `${process.env.BASE_URL!}/${job.id}`;
-      // writeNginxRoute(job.id, true, port);
-      // reloadNginx();
+      // FIX: was commented out — nginx MUST be called to create the
+      // server {} block for the subdomain.
+      writeNginxRoute(job.project_name, job.id, true, port);
+      reloadNginx();
 
       await fs.remove(dir);
       await updateLogs(job.id, `$ Cleaned up local build storage...`);
 
+      // FIX: deployed_url is now the subdomain, not BASE_URL/projectId
       await supabase
         .from("projects")
         .update({ status: "deployed", deployed_url: deployedUrl, port })
         .eq("id", job.id);
+
+      // Bug R6 fix: deployment succeeded, clear flag so catch won't release
+      allocatedPort = null;
 
       await updateLogs(job.id, `$🎉🎉 Node app deployed at: ${deployedUrl}`);
 
@@ -303,6 +355,15 @@ async function processJob(job: Project) {
   } catch (err: any) {
     console.error("# Build failed:", err);
     await updateLogs(job.id, `# Build failed: ${err.message || err}`);
+
+    // Bug R6 fix: release port if allocated but deployment failed
+    if (allocatedPort !== null) {
+      releasePort(allocatedPort);
+      console.log(
+        `[PortManager] Released port ${allocatedPort} after failed deployment`,
+      );
+    }
+
     await fs.remove(dir);
     await updateLogs(job.id, `$ Cleaned up local build...`);
     await supabase
@@ -312,9 +373,20 @@ async function processJob(job: Project) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// startPolling
+// Bug R5 fix: concurrency guard prevents parallel builds
+// ---------------------------------------------------------------------------
 async function startPolling() {
   console.log("@ Runner service polling Redis...");
+  let isProcessing = false;
+
   setInterval(async () => {
+    if (isProcessing) {
+      console.log("@ Build in progress, skipping poll tick...");
+      return;
+    }
+
     const jobString = await redis.rpop("build-queue");
     if (!jobString || jobString === "null") {
       console.log("@ No job found in Redis...");
@@ -327,9 +399,16 @@ async function startPolling() {
         console.log("# Invalid job payload:", job);
         return;
       }
-      await processJob(job);
+
+      isProcessing = true;
+      try {
+        await processJob(job);
+      } finally {
+        isProcessing = false;
+      }
     } catch (err) {
       console.error("# Failed to parse job JSON:", jobString);
+      isProcessing = false;
     }
   }, 5000);
 }

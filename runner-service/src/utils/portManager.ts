@@ -5,9 +5,7 @@ const usedPorts = new Set<number>();
 let portsLoaded = false;
 
 export async function loadPorts(): Promise<void> {
-  if (portsLoaded) {
-    return;
-  }
+  if (portsLoaded) return;
 
   const { data, error } = await supabase
     .from("projects")
@@ -29,11 +27,7 @@ export async function loadPorts(): Promise<void> {
 
 export async function getAvailablePort(): Promise<number> {
   await loadPorts();
-
-  while (usedPorts.has(basePort)) {
-    basePort++;
-  }
-
+  while (usedPorts.has(basePort)) basePort++;
   usedPorts.add(basePort);
   return basePort;
 }

@@ -77,7 +77,7 @@ function NewProject() {
         return;
       }
 
-      const githubToken = process.env.NEXT_PUBLIC_GITHUB_TOKEN;
+      const githubToken = session?.provider_token || process.env.NEXT_PUBLIC_GITHUB_TOKEN!;
 
       if (!githubToken) {
         setError(

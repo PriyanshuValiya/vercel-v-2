@@ -8,7 +8,7 @@ export async function runCommandWithLogs(
   command: string,
   args: string[],
   cwd: string,
-  projectId: string
+  projectId: string,
 ): Promise<void> {
   const fullCommand = `${command} ${args.join(" ")}`;
 
@@ -19,16 +19,14 @@ export async function runCommandWithLogs(
     });
 
     if (stdout) {
-      const lines = stdout.trim().split("\n");
-      for (const line of lines) {
+      for (const line of stdout.trim().split("\n")) {
         console.log(line);
         await updateLogs(projectId, ` ${line.trim()}`);
       }
     }
 
     if (stderr) {
-      const lines = stderr.trim().split("\n");
-      for (const line of lines) {
+      for (const line of stderr.trim().split("\n")) {
         console.error(line);
         await updateLogs(projectId, ` ${line.trim()}`);
       }

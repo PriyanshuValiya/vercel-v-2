@@ -81,7 +81,7 @@ function DeployPage() {
         return;
       }
 
-      const githubToken = process.env.NEXT_PUBLIC_GITHUB_TOKEN;
+      const githubToken = session?.provider_token || process.env.NEXT_PUBLIC_GITHUB_TOKEN!;
 
       const headers: Record<string, string> = {
         Accept: "application/vnd.github.v3+json",
