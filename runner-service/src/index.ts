@@ -200,7 +200,7 @@ async function processJob(job: Project) {
       if (!buildPath) throw new Error("No valid frontend build folder found.");
       await updateLogs(job.id, `$ Found build folder: ${buildPath}`);
 
-      const response = await fetch(`http://172.31.47.64:4500/upload`, {
+      const response = await fetch(`${process.env.BASE_IP_URL!}/upload`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectId: job.id, localPath: buildPath }),
