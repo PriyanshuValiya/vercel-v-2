@@ -38,7 +38,7 @@ export function writeNginxRoute(
   }
 
   const slug = slugifyProjectName(projectName);
-  const subdomain = `${slug}-${process.env.DEPLOY_DOMAIN}`;
+  const subdomain = `${slug}.${process.env.DEPLOY_DOMAIN}`;
   const filePath = path.join(nginxRoutePath, `${projectId}.conf`);
 
   const sslBlock = `
