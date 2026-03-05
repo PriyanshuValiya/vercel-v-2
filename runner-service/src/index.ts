@@ -34,19 +34,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-// ---------------------------------------------------------------------------
-// updateViteConfig
-//
-// FIX: base is now "/" (root of its own subdomain) instead of "/${projectId}/".
-//
-// Old code set base to "/${projectId}/" so assets loaded from:
-//   https://BUCKET.s3.REGION.amazonaws.com/projectId/assets/main.js
-// This only works with a direct S3 URL, not a subdomain proxy.
-//
-// New: base is "/" so assets load from:
-//   https://projectname.vercel.priyanshuvaliya.dev/assets/main.js
-// which nginx proxies correctly to S3 prefix/assets/main.js.
-// ---------------------------------------------------------------------------
 async function updateViteConfig(dir: string, projectId: string) {
   const jsConfig = path.join(dir, "vite.config.js");
   const tsConfig = path.join(dir, "vite.config.ts");
@@ -84,10 +71,6 @@ async function updateViteConfig(dir: string, projectId: string) {
   await fs.writeFile(configPath, configContent);
 }
 
-// ---------------------------------------------------------------------------
-// stopAndRemoveContainer
-// Bug R4 fix: log fires inside the inner exec callback, not outside it.
-// ---------------------------------------------------------------------------
 export const stopAndRemoveContainer = async (
   imageName: string,
   jobId: string,
@@ -134,9 +117,7 @@ export const stopAndRemoveContainer = async (
   });
 };
 
-// ---------------------------------------------------------------------------
 // processJob
-// ---------------------------------------------------------------------------
 async function processJob(job: Project) {
   console.log("🔧 Processing:", job.project_name);
 
@@ -152,12 +133,10 @@ async function processJob(job: Project) {
     .update({ status: "building", logs: "" })
     .eq("id", job.id);
 
-  // Bug R6 fix: track allocated port to release it on failure
   let allocatedPort: number | null = null;
 
-  // FIX: compute subdomain URL once — used for both React and Node
   const projectSlug = slugifyProjectName(job.project_name);
-  const deployedUrl = `https://${projectSlug}-${process.env.DEPLOY_DOMAIN}`;
+  const deployedUrl = `https://${projectSlug}.${process.env.DEPLOY_DOMAIN}`;
 
   try {
     await updateLogs(job.id, `$ Cloning repo ${job.repo_url}...`);
@@ -172,9 +151,7 @@ async function processJob(job: Project) {
       await updateLogs(job.id, "$ .env file created, variable injected...");
     }
 
-    // -----------------------------------------------------------------------
     // React path
-    // -----------------------------------------------------------------------
     if (job.framework === "React") {
       await updateLogs(job.id, "$ Installing dependencies...");
       await runCommandWithLogs("npm", ["install"], dir, job.id);
@@ -209,9 +186,6 @@ async function processJob(job: Project) {
       await response.json();
       await updateLogs(job.id, `$ Uploaded build to S3 successfully...`);
 
-      // FIX: was commented out — nginx MUST be called to create the
-      // server {} block for the subdomain, otherwise SSL handshake fails.
-      // Pass both projectName (subdomain label) and projectId (S3 key).
       writeNginxRoute(job.project_name, job.id, false);
       reloadNginx();
 
@@ -236,12 +210,9 @@ async function processJob(job: Project) {
         }),
       });
 
-      // -----------------------------------------------------------------------
       // Node path
-      // -----------------------------------------------------------------------
     } else {
       const port = job.port == null ? await getAvailablePort() : job.port;
-      // Bug R6 fix: record port so catch block can release it
       allocatedPort = port;
 
       const dockerfilePath = path.join(dir, "Dockerfile");
@@ -305,9 +276,6 @@ CMD ["node", "${isTSProject ? "dist" : "."}/${entryFile.replace(".ts", ".js")}"]
       );
 
       await updateLogs(job.id, `$ Running Docker container...`);
-      // FIX: bind to 127.0.0.1 — port is NOT exposed publicly.
-      // EC2 security group does NOT need this port open anymore.
-      // Old: `-p ${port}:3000`  →  New: `-p 127.0.0.1:${port}:3000`
       await runCommandWithLogs(
         "docker",
         [
@@ -323,8 +291,6 @@ CMD ["node", "${isTSProject ? "dist" : "."}/${entryFile.replace(".ts", ".js")}"]
         job.id,
       );
 
-      // FIX: was commented out — nginx MUST be called to create the
-      // server {} block for the subdomain.
       writeNginxRoute(job.project_name, job.id, true, port);
       reloadNginx();
 
@@ -373,10 +339,7 @@ CMD ["node", "${isTSProject ? "dist" : "."}/${entryFile.replace(".ts", ".js")}"]
   }
 }
 
-// ---------------------------------------------------------------------------
 // startPolling
-// Bug R5 fix: concurrency guard prevents parallel builds
-// ---------------------------------------------------------------------------
 async function startPolling() {
   console.log("@ Runner service polling Redis...");
   let isProcessing = false;

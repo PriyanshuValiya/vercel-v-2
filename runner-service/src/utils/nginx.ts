@@ -5,22 +5,6 @@ import fs from "fs";
 import path from "path";
 import { exec } from "child_process";
 
-// ---------------------------------------------------------------------------
-// FEATURE: Subdomain-based routing
-//
-// behaviour: Each project gets its own subdomain:
-//   React: https://projectname.vercel.priyanshuvaliya.dev
-//   Node:  https://projectname.vercel.priyanshuvaliya.dev
-//
-// Nginx now generates per-project server {} blocks keyed by server_name
-// instead of location /projectId/ blocks.
-//
-// Required new env vars in runner-service/.env:
-//   DEPLOY_DOMAIN=vercel.priyanshuvaliya.dev
-//   SSL_CERT_PATH=/etc/ssl/cloudflare/origin.pem
-//   SSL_CERT_KEY_PATH=/etc/ssl/cloudflare/origin.key
-// ---------------------------------------------------------------------------
-
 if (
   !process.env.S3_BUCKET ||
   !process.env.AWS_REGION ||
@@ -33,10 +17,7 @@ if (
   );
 }
 
-const nginxRoutePath =
-  process.platform === "win32"
-    ? path.resolve(__dirname, "../../nginx/routes")
-    : "/etc/nginx/conf.d";
+const nginxRoutePath = "/etc/nginx/conf.d";
 
 export function slugifyProjectName(name: string): string {
   return name
@@ -57,7 +38,7 @@ export function writeNginxRoute(
   }
 
   const slug = slugifyProjectName(projectName);
-  const subdomain = `${slug}.${process.env.DEPLOY_DOMAIN}`;
+  const subdomain = `${slug}-${process.env.DEPLOY_DOMAIN}`;
   const filePath = path.join(nginxRoutePath, `${projectId}.conf`);
 
   const sslBlock = `
@@ -65,6 +46,7 @@ export function writeNginxRoute(
     ssl_certificate_key ${process.env.SSL_CERT_KEY_PATH};
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;`.trim();
+
   const httpRedirectBlock = `
 server {
     listen 80;
@@ -118,7 +100,7 @@ server {
 
   try {
     fs.writeFileSync(filePath, config);
-    console.log(`[NGINX] Subdomain route written: https://${subdomain}`);
+    console.log(`[NGINX] Route written: https://${subdomain}`);
   } catch (err) {
     console.error(`[NGINX] Failed to write route: ${err}`);
   }
@@ -127,7 +109,7 @@ server {
 export function reloadNginx() {
   exec(
     `nsenter -t 1 -m -u -i -n -p -- nginx -s reload`,
-    (err, stdout, stderr) => {
+    (err, _stdout, stderr) => {
       if (err) {
         console.error("# nginx reload failed:", stderr);
       } else {
