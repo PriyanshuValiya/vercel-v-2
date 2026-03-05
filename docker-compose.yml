@@ -30,9 +30,12 @@ services:
       - "2805:2805"
     env_file:
       - runner-service/.env
+    privileged: true                          
+    pid: "host"                               
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /home/ubuntu/vercel/builds:/home/ubuntu/vercel/builds
+      - /etc/nginx/conf.d:/etc/nginx/conf.d   
     depends_on:
       - upload-service
       - backend

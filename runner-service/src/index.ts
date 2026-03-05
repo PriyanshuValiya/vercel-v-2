@@ -157,7 +157,7 @@ async function processJob(job: Project) {
 
   // FIX: compute subdomain URL once — used for both React and Node
   const projectSlug = slugifyProjectName(job.project_name);
-  const deployedUrl = `https://${projectSlug}.${process.env.DEPLOY_DOMAIN}`;
+  const deployedUrl = `https://${projectSlug}-${process.env.DEPLOY_DOMAIN}`;
 
   try {
     await updateLogs(job.id, `$ Cloning repo ${job.repo_url}...`);
