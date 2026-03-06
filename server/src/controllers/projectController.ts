@@ -228,7 +228,7 @@ export const triggerCreateProject = async (req: Request, res: Response) => {
     }
 
     const response = await axios.post(
-      "https://vercel.priyanshuvaliya.dev/api/project",
+      "https://api-vercel.priyanshuvaliya.dev/api/project",
       {
         repo_url: projectData.repo_url,
         framework: projectData.framework,
