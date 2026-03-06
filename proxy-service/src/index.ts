@@ -36,7 +36,7 @@ app.use(async (req: express.Request, res: express.Response) => {
     const { data: project, error } = await supabase
       .from("projects")
       .select("id, framework, port, status")
-      .ilike("deployed_url", `%${projectSlug}%`)
+      .eq("deployed_url", `https://${hostname}`)
       .eq("status", "deployed")
       .single();
 
