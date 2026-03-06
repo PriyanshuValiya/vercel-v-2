@@ -46,9 +46,11 @@ services:
     build: ./proxy-service
     container_name: vercel_proxy_service
     ports:
-      - "127.0.0.1:5000:5000"   
+      - "127.0.0.1:5000:5000"
     env_file:
       - proxy-service/.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: always
 
   # frontend:
