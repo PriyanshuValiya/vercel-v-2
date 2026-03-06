@@ -14,7 +14,7 @@ export const getRepos = async (req: Request, res: Response) => {
         headers: {
           Authorization: `Bearer ${githubtoken}`,
         },
-      }
+      },
     );
     const repos = await response.json();
     res.status(200).json({ message: "Repos fetched successfully...", repos });
@@ -184,9 +184,7 @@ export const getProjects = async (req: Request, res: Response) => {
       .eq("user_id", userId);
 
     if (userProjectError) {
-      return res
-        .status(500)
-        .json({ success: false, error: userProjectError });
+      return res.status(500).json({ success: false, error: userProjectError });
     }
 
     return res.status(200).json({ success: true, data: userProjectData });
@@ -199,7 +197,13 @@ export const getProjects = async (req: Request, res: Response) => {
 // POST /api/webhook
 export const triggerCreateProject = async (req: Request, res: Response) => {
   try {
-    const userName = req.body?.repository?.owner?.name;
+    const githubEvent = req.headers["x-github-event"];
+    
+    if (githubEvent === "ping") {
+      return res.status(200).json({ message: "Webhook ping received!" });
+    }
+
+    const userName = req.body?.repository?.owner?.login; 
     const repoUrl = req.body?.repository?.clone_url;
 
     if (!userName || !repoUrl) {
@@ -234,18 +238,16 @@ export const triggerCreateProject = async (req: Request, res: Response) => {
         framework: projectData.framework,
         env_variables: projectData.env_variables,
         user_id: projectData.user_id,
-      }
+      },
     );
-
-    const result = response.data;
 
     return res.status(200).json({
       success: true,
       message: "Webhook Triggered & Deployment Started",
-      projectResponse: result,
+      projectResponse: response.data,
     });
   } catch (err) {
     console.error("Error in Trigger Webhook :", err);
-    return res.status(400).json({ error: err });
+    return res.status(500).json({ error: String(err) });
   }
 };
