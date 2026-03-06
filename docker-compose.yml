@@ -42,13 +42,13 @@ services:
       - backend
     restart: always
 
-    proxy-service:
-      build: ./proxy-service
-      container_name: vercel_proxy_service
-      network_mode: "host"
-      env_file:
-        - proxy-service/.env
-      restart: always
+  proxy-service:
+    build: ./proxy-service
+    container_name: vercel_proxy_service
+    network_mode: "host"
+    env_file:
+      - proxy-service/.env
+    restart: always
 
   # frontend:
   #   build: ./www
