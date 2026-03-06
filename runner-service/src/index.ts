@@ -110,7 +110,6 @@ export const stopAndRemoveContainer = async (
           return reject(err2);
         }
         resolve();
-        // Bug R4 fix: this log now fires AFTER the command completes
         await updateLogs(jobId, `$ Cleaned up old Containers...`);
       });
     });
@@ -157,7 +156,6 @@ async function processJob(job: Project) {
       await runCommandWithLogs("npm", ["install"], dir, job.id);
 
       await updateLogs(job.id, "$ Updating vite.config.js...");
-      // FIX: no longer passes projectId — base is now always "/"
       await updateViteConfig(dir, job.id);
 
       await updateLogs(job.id, "$ Building project...");
@@ -192,7 +190,6 @@ async function processJob(job: Project) {
       await fs.remove(dir);
       await updateLogs(job.id, `$ Cleaned up local build...`);
 
-      // FIX: deployed_url is now the subdomain, not the raw S3 URL
       await supabase
         .from("projects")
         .update({ status: "deployed", deployed_url: deployedUrl })
@@ -297,13 +294,11 @@ CMD ["node", "${isTSProject ? "dist" : "."}/${entryFile.replace(".ts", ".js")}"]
       await fs.remove(dir);
       await updateLogs(job.id, `$ Cleaned up local build storage...`);
 
-      // FIX: deployed_url is now the subdomain, not BASE_URL/projectId
       await supabase
         .from("projects")
         .update({ status: "deployed", deployed_url: deployedUrl, port })
         .eq("id", job.id);
 
-      // Bug R6 fix: deployment succeeded, clear flag so catch won't release
       allocatedPort = null;
 
       await updateLogs(job.id, `$🎉🎉 Node app deployed at: ${deployedUrl}`);
@@ -322,7 +317,6 @@ CMD ["node", "${isTSProject ? "dist" : "."}/${entryFile.replace(".ts", ".js")}"]
     console.error("# Build failed:", err);
     await updateLogs(job.id, `# Build failed: ${err.message || err}`);
 
-    // Bug R6 fix: release port if allocated but deployment failed
     if (allocatedPort !== null) {
       releasePort(allocatedPort);
       console.log(
