@@ -215,9 +215,11 @@ function DeployPage() {
         return acc;
       }, {} as Record<string, string>);
 
+      const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:4500";
+
       // Make API call to deploy
       const deployResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_SERVER_URL}/api/project`,
+        `${serverUrl}/api/project`,
         {
           method: "POST",
           headers: {

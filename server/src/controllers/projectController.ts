@@ -224,7 +224,7 @@ export const triggerCreateProject = async (req: Request, res: Response) => {
       .from("projects")
       .select("user_id, repo_url, framework, env_variables")
       .eq("user_id", userData.id)
-      .eq("repo_url", repoUrl)
+      .eq("repo_url", repoUrl)  
       .single();
 
     if (errorProjectData) {
