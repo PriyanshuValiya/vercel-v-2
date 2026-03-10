@@ -20,5 +20,7 @@ export default async function DeploymentPage({
     return null;
   }
 
+  console.log("Project:", project);
+
   return <DeploymentClient initialProject={project} />;
 }
