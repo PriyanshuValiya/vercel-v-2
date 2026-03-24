@@ -17,7 +17,7 @@ if (
   );
 }
 
-const nginxRoutePath = "/etc/nginx/conf.d/routes";
+const nginxRoutePath = "/etc/nginx/conf.d";
 
 export function slugifyProjectName(name: string): string {
   return name
