@@ -107,6 +107,7 @@ server {
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_intercept_errors on;
+    error_page 403 = /index.html;
     error_page 404 = /index.html;
   }
 }`.trim();
