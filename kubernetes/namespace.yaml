@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vercel-system
+  labels:
+    project: vercel-clone
+    owner: priyanshu
