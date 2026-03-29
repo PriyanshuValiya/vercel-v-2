@@ -18,8 +18,7 @@ This repository contains a monorepo implementation of a Vercel-like deployment p
 - S3 support for file uploads
 
 ## Demo Video
-([🎥 Watch Demo](https://github.com/PriyanshuValiya/vercel/blob/main/Vercel%20Demo%20Video.mp4))
-<video src="https://github.com/PriyanshuValiya/vercel/blob/main/Vercel%20Demo%20Video.mp4" controls width="600"></video>
+([🎥 Watch Demo](https://assets-priyanshuvaliya.s3.ap-south-1.amazonaws.com/Vercel.mp4))
 
 ## Getting Started
 
