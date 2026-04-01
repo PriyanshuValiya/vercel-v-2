@@ -2,5 +2,14 @@
 **/node_modules
 **/.env
 
-kubernetes/secrets
-kubernetes/document.txt
+# Kubernetes & Deployment
+deployment/terraform/.terraform/
+deployment/terraform/terraform.tfstate
+deployment/terraform/terraform.tfstate.backup
+deployment/terraform/.terraform.lock.hcl
+vercel.pem
+deployment/k8s/secrets/
+
+# Local env files used for secret generation
+*.env.local
+document.txt
