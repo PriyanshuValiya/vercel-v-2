@@ -5,7 +5,7 @@ echo "============================================"
 echo " Vercel Clone — Creating K8s Secrets"
 echo "============================================"
 
-NAMESPACE="vercel-system"
+NAMESPACE="vercel"
 SECRETS_DIR="/tmp/vercel-secrets"
 
 echo "[1/3] Verifying env files..."

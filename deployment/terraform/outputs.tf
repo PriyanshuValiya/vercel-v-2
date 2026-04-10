@@ -13,7 +13,7 @@ output "ssh_command" {
   value       = "ssh -i ${var.key_path} ubuntu@${module.compute.public_ip}"
 }
 
-output "spot_info" {
+output "instance_info" {
   description = "Instance configuration summary"
-  value       = "Type: ${var.instance_type} | Region: ${var.aws_region} | Mode: SPOT"
+  value       = "Type: ${var.instance_type} | Region: ${var.aws_region} | Mode: ON-DEMAND"
 }

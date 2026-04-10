@@ -8,8 +8,10 @@ deployment/terraform/terraform.tfstate
 deployment/terraform/terraform.tfstate.backup
 deployment/terraform/.terraform.lock.hcl
 vercel.pem
+origin.*
 deployment/k8s/secrets/
 
 # Local env files used for secret generation
 *.env.local
 document.txt
+user-data.txt

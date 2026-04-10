@@ -24,13 +24,6 @@ resource "aws_instance" "this" {
   key_name               = var.key_name
   vpc_security_group_ids = [var.security_group_id]
 
-  instance_market_options {
-    market_type = "spot"
-    spot_options {
-      instance_interruption_behavior = "terminate"
-    }
-  }
-
   root_block_device {
     volume_size           = var.volume_size
     volume_type           = "gp3"
@@ -45,6 +38,6 @@ resource "aws_instance" "this" {
   tags = {
     Name    = "${var.project_name}-server"
     Project = var.project_name
-    Mode    = "spot"
+    Mode    = "on-demand"
   }
 }
