@@ -155,3 +155,9 @@ The system is composed of four independent microservices coordinated via a Redis
 ## Requirements
 - Docker & Docker Compose
 - Node.js & npm (for local development)
+
+---
+
+## Demo Video
+
+[![Watch Demo](https://img.shields.io/badge/Watch-Demo-blue?style=for-the-badge&logo=vercel)](https://assets-priyanshuvaliya.s3.ap-south-1.amazonaws.com/Vercel.mp4)
