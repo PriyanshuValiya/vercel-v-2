@@ -25,6 +25,13 @@ Hosted deployment platforms like Vercel, Railway, and Render impose pricing tier
 
 ---
 
+## User Diagram
+<p align="center">
+  <img src="https://github.com/PriyanshuValiya/vercel-v-2/blob/main/Vercel.png" alt="Vercel Clone Architecture" />
+</p>
+
+--
+
 ## Tech Stack
 
 | Layer | Technology |
