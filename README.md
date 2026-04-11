@@ -158,6 +158,10 @@ The system is composed of four independent microservices coordinated via a Redis
 
 ---
 
-## Demo Video
+## Demo Video (Click the image to see a demo video)
 
-[![Watch Demo](https://img.shields.io/badge/Watch-Demo-blue?style=for-the-badge&logo=vercel)](https://assets-priyanshuvaliya.s3.ap-south-1.amazonaws.com/Vercel.mp4)
+<p align="center">
+  <a href="https://assets-priyanshuvaliya.s3.ap-south-1.amazonaws.com/Vercel.mp4">
+    <img src="https://raw.githubusercontent.com/PriyanshuValiya/vercel-v-2/main/Vercel.png" />
+  </a>
+</p>
