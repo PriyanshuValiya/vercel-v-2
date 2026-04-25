@@ -156,12 +156,12 @@ The system is composed of four independent microservices coordinated via a Redis
 - Docker & Docker Compose
 - Node.js & npm (for local development)
 
----
+	---
 
-## Demo Video (Click the image to see a demo video)
+	## Demo Video (Click the image to see a demo video)
 
-<p align="center">
-  <a href="https://assets-priyanshuvaliya.s3.ap-south-1.amazonaws.com/Vercel.mp4">
-    <img src="https://raw.githubusercontent.com/PriyanshuValiya/vercel-v-2/main/Vercel.png" />
-  </a>
-</p>
+	<p align="center">
+	<a href="https://assets-priyanshuvaliya.s3.ap-south-1.amazonaws.com/Vercel.mp4">
+		<img src="https://raw.githubusercontent.com/PriyanshuValiya/vercel-v-2/main/Vercel.png" />
+	</a>
+	</p>
