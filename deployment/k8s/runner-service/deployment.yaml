@@ -18,7 +18,7 @@ spec:
       hostPID: true
       containers:
         - name: runner-service
-          image: priyanshuvaliya18/vercel-runner-service:v3
+          image: priyanshuvaliya18/vercel-runner-service:latest
           imagePullPolicy: Always
           securityContext:
             privileged: true
