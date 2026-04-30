@@ -11,6 +11,10 @@ vercel.pem
 origin.*
 deployment/k8s/secrets/
 
+deployment/supabase/terraform/.terraform
+deployment/supabase/terraform/.terraform.lock.hcl
+deployment/supabase/terraform/terraform.tfstate*
+
 # Local env files used for secret generation
 *.env.local
 document.txt
