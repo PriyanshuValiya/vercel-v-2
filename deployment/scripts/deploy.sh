@@ -108,21 +108,16 @@ $SSH "kubectl wait --namespace ingress-nginx \
 $SSH "kubectl delete validatingwebhookconfiguration ingress-nginx-admission --ignore-not-found=true"
 log "ingress-nginx ready.."
 
-# ── Step 8: Label Worker Node ─────────────────────────────
-log "Step 8: Labeling worker node..."
-$SSH "kubectl label node vercel-cluster-worker dockerhost=true --overwrite"
-log "Node labeled.."
-
-# ── Step 9: Host Directories + SSL Certs ─────────────────
-log "Step 9: Creating directories and transferring SSL certs..."
+# ── Step 8: Host Directories + SSL Certs ─────────────────
+log "Step 8: Creating directories and transferring SSL certs..."
 $SSH "sudo mkdir -p /home/ubuntu/vercel/builds /etc/nginx/conf.d /etc/ssl/cloudflare && \
       sudo chmod 777 /home/ubuntu/vercel/builds /etc/nginx/conf.d"
 cat "$DEPLOY_DIR/origin.pem" | $SSH "sudo tee /etc/ssl/cloudflare/origin.pem > /dev/null"
 cat "$DEPLOY_DIR/origin.key" | $SSH "sudo tee /etc/ssl/cloudflare/origin.key > /dev/null"
 log "SSL certs transferred.."
 
-# ── Step 10: Namespace + Secrets ─────────────────────────
-log "Step 10: Creating namespace and K8s secrets..."
+# ── Step 9: Namespace + Secrets ─────────────────────────
+log "Step 9: Creating namespace and K8s secrets..."
 $SSH "kubectl create namespace vercel --dry-run=client -o yaml | kubectl apply -f -"
 $SSH "mkdir -p /tmp/vercel-secrets"
 cat "$ROOT_DIR/server/.env"          | $SSH "cat > /tmp/vercel-secrets/server.env"
@@ -134,8 +129,8 @@ scp -i "$KEY" -o StrictHostKeyChecking=no \
 $SSH "sed -i 's/\r$//' /home/ubuntu/create-secrets.sh && bash /home/ubuntu/create-secrets.sh"
 log "Secrets created.."
 
-# ── Step 11: Transfer K8s Manifests ──────────────────────
-log "Step 11: Transferring K8s manifests..."
+# ── Step 10: Transfer K8s Manifests ──────────────────────
+log "Step 10: Transferring K8s manifests..."
 for svc in upload-service server runner-service proxy-service; do
   $SSH "mkdir -p /home/ubuntu/k8s/$svc"
 done
@@ -153,8 +148,8 @@ for f in \
 done
 log "Manifests transferred.."
 
-# ── Step 12: Deploy All Services ─────────────────────────
-log "Step 12: Deploying all services..."
+# ── Step 11: Deploy All Services ─────────────────────────
+log "Step 11: Deploying all services..."
 $SSH "kubectl apply -f /home/ubuntu/k8s/upload-service/"
 $SSH "kubectl apply -f /home/ubuntu/k8s/server/"
 $SSH "kubectl apply -f /home/ubuntu/k8s/runner-service/"
@@ -162,15 +157,15 @@ $SSH "kubectl apply -f /home/ubuntu/k8s/proxy-service/"
 $SSH "kubectl apply -f /home/ubuntu/k8s/ingress.yaml"
 log "All manifests applied.."
 
-# ── Step 13: Wait for All Pods ───────────────────────────
-warn "Step 13: Waiting for all pods to be ready..."
+# ── Step 12: Wait for All Pods ───────────────────────────
+warn "Step 12: Waiting for all pods to be ready..."
 $SSH "kubectl rollout status deployment/upload-service -n vercel --timeout=180s"
 $SSH "kubectl rollout status deployment/server -n vercel --timeout=180s"
 $SSH "kubectl rollout status deployment/runner-service -n vercel --timeout=180s"
 $SSH "kubectl rollout status deployment/proxy-service -n vercel --timeout=180s"
 log "All deployments ready.."
 
-# ── Step 14: Final Summary ────────────────────────────────
+# ── Step 13: Final Summary ────────────────────────────────
 echo ""
 echo -e "${GREEN}============================================${NC}"
 echo -e "${GREEN}   Deployment Complete!${NC}"

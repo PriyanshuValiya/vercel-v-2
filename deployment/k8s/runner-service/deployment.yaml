@@ -16,11 +16,9 @@ spec:
         app: runner-service
     spec:
       hostPID: true
-      nodeSelector:
-        dockerhost: "true" 
       containers:
         - name: runner-service
-          image: priyanshuvaliya18/vercel-runner-service:latest
+          image: priyanshuvaliya18/vercel-runner-service:v3
           imagePullPolicy: Always
           securityContext:
             privileged: true

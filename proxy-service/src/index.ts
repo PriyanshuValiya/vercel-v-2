@@ -9,7 +9,7 @@ const app = express();
 
 const S3_BASE = process.env.BUCKET_NAME!;
 const PORT = process.env.PORT || 5000;
-const HOST_URL = process.env.HOST_URL || "127.0.0.1";
+const HOST_URL = process.env.HOST_URL || "172.18.0.1";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,

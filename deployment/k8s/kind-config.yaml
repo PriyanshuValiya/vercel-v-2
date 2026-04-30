@@ -26,5 +26,3 @@ nodes:
         containerPath: /etc/nginx/conf.d
       - hostPath: /etc/ssl/cloudflare
         containerPath: /etc/ssl/cloudflare
-  - role: worker
-  - role: worker

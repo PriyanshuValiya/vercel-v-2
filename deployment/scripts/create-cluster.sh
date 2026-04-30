@@ -35,8 +35,15 @@ nodes:
         hostPort: 443
         protocol: TCP
   - role: worker
-  - role: worker
-  - role: worker
+    extraMounts:
+      - hostPath: /var/run/docker.sock
+        containerPath: /var/run/docker.sock
+      - hostPath: /home/ubuntu/vercel/builds
+        containerPath: /home/ubuntu/vercel/builds
+      - hostPath: /etc/nginx/conf.d
+        containerPath: /etc/nginx/conf.d
+      - hostPath: /etc/ssl/cloudflare
+        containerPath: /etc/ssl/cloudflare
 EOF
 echo "KIND config written.."
 

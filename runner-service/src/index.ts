@@ -279,7 +279,7 @@ CMD ["node", "${isTSProject ? "dist" : "."}/${entryFile.replace(".ts", ".js")}"]
           "run",
           "-d",
           "-p",
-          `127.0.0.1:${port}:3000`,
+          `0.0.0.0:${port}:3000`,
           "--name",
           imageName,
           imageName,

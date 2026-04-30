@@ -17,8 +17,6 @@ spec:
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
-      nodeSelector:
-        dockerhost: "true"
       containers:
         - name: proxy-service
           image: priyanshuvaliya18/vercel-proxy-service:latest
