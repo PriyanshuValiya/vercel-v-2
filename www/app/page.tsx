@@ -140,7 +140,7 @@ export default function LandingPage() {
                 <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
                 <div className="w-3 h-3 bg-green-400 rounded-full"></div>
                 <div className="ml-4 text-sm text-gray-500">
-                  vercel.priyanshuvaliya.me/project
+                  vercel.priyanshuvaliya.dev/project
                 </div>
               </div>
               <div className="p-6">
