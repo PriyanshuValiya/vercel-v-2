@@ -15,7 +15,7 @@ variable "security_group_id" {
 }
 
 variable "snapshot_id" {
-  default     = "snap-01bd977d0827f4a97"
+  default     = "snap-0c501f4b4537876be"
   description = "EBS snapshot ID to use as root volume"
   type        = string
 }
