@@ -12,7 +12,8 @@ const PORT = 4500;
 const allowedOrigins = [
   "https://vercel.priyanshuvaliya.dev",
   "http://localhost:3000",
-  "https://vercel-v-2.vercel.app"
+  "https://vercel-v-2.vercel.app",
+  "https://mini-vercel.krisvora.me"
 ];
 
 app.use(
